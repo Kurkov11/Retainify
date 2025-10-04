@@ -6,7 +6,7 @@ export function FileInput({ onChange }: { onChange }) {
   return (
     <div className="grid w-full max-w-sm items-center gap-3">
       <Label htmlFor="picture">Picture</Label>
-      <Input id="picture" type="file" onChange={onChange} />
+      <Input id="picture" type="file" onChange={onChange} accept=".txt" />
     </div>
   );
 }
