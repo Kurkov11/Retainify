@@ -33,6 +33,11 @@ export default function QuizDialog() {
       onOpenChange={(open) => {
         if (open) {
           (async () => {
+            setQuestionIndex(0);
+            setQuiz(null);
+            setChosenAnswerIndex(null);
+            setShowingCorrectAnswer(false);
+
             await new Promise((resolve, reject) => {
               setTimeout(resolve, 2000);
             });

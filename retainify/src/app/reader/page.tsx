@@ -14,10 +14,15 @@ export default function Page() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [pages, setPages] = useState<string[]>([]);
   const [selection, setSelection] = useState("");
+  const [liveSelectionLength, setLiveSelectionLength] = useState(0);
 
   const pageCount = pages.length;
 
   useEffect(() => {
+    document.addEventListener("selectionchange", () => {
+      const newSelection = getSelection()?.toString() || "";
+      setLiveSelectionLength(newSelection.length);
+    });
     document.addEventListener("mouseup", () => {
       const newSelection = window.getSelection()?.toString() || "";
       console.log(newSelection);
@@ -77,7 +82,13 @@ export default function Page() {
       >
         <ArrowRight />
       </Button>
-      {selection.length > 500 && <QuizDialog />}
+      {liveSelectionLength <= 500 && (
+        <div className="absolute top-10 left-1/2 -translate-x-1/2">
+          <p className="text-gray-500">Selected characters</p>
+          <p className="text-xl w-fit mx-auto">{liveSelectionLength} / 500</p>
+        </div>
+      )}
+      {liveSelectionLength > 500 && <QuizDialog />}
     </main>
   );
 }
