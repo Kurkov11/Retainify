@@ -90,6 +90,11 @@ export default function QuizDialog() {
               },
             ]);
           })();
+        } else {
+          setQuestionIndex(0);
+          setQuiz(null);
+          setChosenAnswerIndex(null);
+          setShowingCorrectAnswer(false);
         }
       }}
     >
