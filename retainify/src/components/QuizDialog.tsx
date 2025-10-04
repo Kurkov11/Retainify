@@ -26,6 +26,7 @@ export default function QuizDialog() {
   const [chosenAnswerIndex, setChosenAnswerIndex] = useState<number | null>(
     null
   );
+  const [showingCorrectAnswer, setShowingCorrectAnswer] = useState(false);
 
   return (
     <Dialog
@@ -110,22 +111,40 @@ export default function QuizDialog() {
                   {quiz[questionIndex].possibleAnswers.map((answer, i) => (
                     <Button
                       className={`${
-                        chosenAnswerIndex === i &&
-                        i === quiz[questionIndex].correctIndex
+                        i === quiz[questionIndex].correctIndex &&
+                        showingCorrectAnswer
                           ? "bg-green-400 hover:bg-green-400 text-black"
                           : chosenAnswerIndex === i
                           ? "bg-red-500 hover:bg-red-500"
                           : ""
-                      }`}
+                      }
+                      ${
+                        i === quiz[questionIndex].correctIndex &&
+                        showingCorrectAnswer
+                          ? "bg-green-400 hover:bg-green-400"
+                          : ""
+                      }
+                      `}
                       variant={
                         chosenAnswerIndex !== null && chosenAnswerIndex !== i
                           ? "outline"
                           : "default"
                       }
                       key={answer}
-                      onClick={() =>
-                        chosenAnswerIndex === null && setChosenAnswerIndex(i)
-                      }
+                      onClick={() => {
+                        if (chosenAnswerIndex === null) {
+                          setChosenAnswerIndex(i);
+
+                          if (i !== quiz[questionIndex].correctIndex) {
+                            const prevQuestionIndex = questionIndex;
+                            setTimeout(() => {
+                              setShowingCorrectAnswer(true);
+                            }, 1000);
+                          } else {
+                            setShowingCorrectAnswer(true);
+                          }
+                        }
+                      }}
                     >
                       {answer}
                     </Button>
@@ -139,8 +158,11 @@ export default function QuizDialog() {
                     onClick={() => {
                       setQuestionIndex((prev) => prev + 1);
                       setChosenAnswerIndex(null);
+                      setShowingCorrectAnswer(false);
                     }}
-                    disabled={chosenAnswerIndex === null}
+                    disabled={
+                      chosenAnswerIndex === null || !showingCorrectAnswer
+                    }
                   >
                     Next
                   </Button>
@@ -148,11 +170,13 @@ export default function QuizDialog() {
                 {questionIndex + 1 >= quiz.length && (
                   <DialogClose asChild>
                     <Button
+                      disabled={!showingCorrectAnswer}
                       type="submit"
                       onClick={() => {
                         setQuestionIndex(0);
                         setQuiz(null);
                         setChosenAnswerIndex(null);
+                        setShowingCorrectAnswer(false);
                       }}
                     >
                       End
