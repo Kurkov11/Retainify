@@ -1,11 +1,10 @@
 "use client";
 
 import { FileInput } from "@/components/FileInput";
-import { createLoader, Reader, Book } from "@asteasolutions/epub-reader";
 
 import "./reader.css";
 import { useEffect, useState } from "react";
-import { extractPagesFromFile } from "@/utils";
+import { extractPagesFromFile, extractPagesFromText } from "@/utils";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QuizDialog from "@/components/QuizDialog";
@@ -15,22 +14,64 @@ export default function Page() {
   const [pages, setPages] = useState<string[]>([]);
   const [selection, setSelection] = useState("");
   const [liveSelectionLength, setLiveSelectionLength] = useState(0);
+  const [quizRunning, setQuizRunning] = useState<boolean>(false);
+  const [bookContext, setBookContext] = useState<string>("");
 
   const pageCount = pages.length;
 
   useEffect(() => {
-    document.addEventListener("selectionchange", () => {
+    function handleSelectionChange() {
+      console.log("selectionchange ", quizRunning);
+      if (quizRunning) return;
+
       const newSelection = getSelection()?.toString() || "";
       setLiveSelectionLength(newSelection.length);
-    });
-    document.addEventListener("mouseup", () => {
+    }
+    function handleMouseUp() {
+      if (quizRunning) return;
+
+      console.log("mouseup");
       const newSelection = window.getSelection()?.toString() || "";
-      console.log(newSelection);
       setSelection(newSelection);
-    });
+      setLiveSelectionLength(newSelection.length);
+
+      const newBookContext =
+        currentPage > 0 ? pages[currentPage - 1] : pages[currentPage];
+
+      setBookContext(newBookContext);
+    }
+    document.addEventListener("selectionchange", handleSelectionChange);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [quizRunning]);
+
+  useEffect(() => {
+    const savedBook = localStorage.getItem("uploadedBook");
+    const savedPage = localStorage.getItem("currentPage");
+
+    if (savedBook) {
+      console.log("Book text retrieved:", savedBook);
+      const newPages = extractPagesFromText(savedBook, 2_400);
+      setPages(newPages);
+    } else {
+      console.log("No book found in localStorage.");
+    }
+    if (savedPage) {
+      console.log("Page retrieved:", savedPage);
+      setCurrentPage(parseInt(savedPage));
+    } else {
+      console.log("No book found in localStorage.");
+    }
   }, []);
+  useEffect(() => {
+    localStorage.setItem("currentPage", currentPage.toString());
+  }, [currentPage]);
   return (
-    <main className="mx-20 mt-10">
+    <main className="mx-20 pt-10">
       <div className="flex justify-between">
         <div>
           <h1 className="font-medium text-xl mb-5">Retainify</h1>
@@ -43,7 +84,7 @@ export default function Page() {
               }
               (async () => {
                 try {
-                  const newPages = await extractPagesFromFile(file, 2_300); // max 1000 chars per page
+                  const newPages = await extractPagesFromFile(file, 2_400); // max 1000 chars per page
                   setPages(newPages);
                 } catch (err) {
                   console.error(err);
@@ -68,7 +109,7 @@ export default function Page() {
           setCurrentPage((page) => page - 1);
         }}
         disabled={currentPage - 1 < 0}
-        className="absolute left-5 top-1/2 -translate-y-1/2 h-[100px]"
+        className="fixed left-5 top-1/2 -translate-y-1/2 h-[100px]"
       >
         <ArrowLeft />
       </Button>
@@ -77,7 +118,7 @@ export default function Page() {
           setSelection("");
           setCurrentPage((page) => page + 1);
         }}
-        className="absolute right-5 top-1/2 -translate-y-1/2 h-[100px]"
+        className="fixed right-5 top-1/2 -translate-y-1/2 h-[100px]"
         disabled={currentPage + 1 >= pageCount}
       >
         <ArrowRight />
@@ -88,7 +129,16 @@ export default function Page() {
           <p className="text-xl w-fit mx-auto">{liveSelectionLength} / 500</p>
         </div>
       )}
-      {liveSelectionLength > 500 && <QuizDialog />}
+      {liveSelectionLength > 500 && (
+        <QuizDialog
+          onOpenChange={(open) => {
+            console.log("onOpenChange callback: ", open);
+            setQuizRunning(open);
+          }}
+          selection={selection}
+          bookContext={bookContext}
+        />
+      )}
     </main>
   );
 }

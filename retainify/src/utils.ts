@@ -12,6 +12,8 @@ export function extractPagesFromFile(
 
     reader.onload = () => {
       const text = reader.result as string;
+      localStorage.setItem("uploadedBook", text);
+      console.log("File stored in localStorage!");
 
       // Split into pages
       const pages: string[] = [];
@@ -37,4 +39,24 @@ export function extractPagesFromFile(
 
     reader.readAsText(file);
   });
+}
+export function extractPagesFromText(
+  text: string,
+  maxPageLength: number
+): string[] {
+  const pages: string[] = [];
+  let currentPageLength = 0;
+  for (let i = 0; i < text.length; i += currentPageLength) {
+    const baseText = text.slice(i, i + maxPageLength);
+    const lastDotIndex = baseText.lastIndexOf(".");
+    if (lastDotIndex === -1) {
+      pages.push(baseText);
+      currentPageLength = maxPageLength;
+    } else {
+      pages.push(baseText.slice(0, lastDotIndex + 1));
+      currentPageLength = lastDotIndex + 1;
+    }
+  }
+
+  return pages;
 }

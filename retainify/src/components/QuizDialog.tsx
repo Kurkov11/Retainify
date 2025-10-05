@@ -11,16 +11,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getGroqChatCompletion } from "@/groq";
+import { AnyTxtRecord } from "dns";
 import { useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
-export default function QuizDialog() {
+export default function QuizDialog({
+  onOpenChange,
+  selection,
+  bookContext,
+}: {
+  onOpenChange: (open: boolean) => any;
+  selection: string;
+  bookContext: string;
+}) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [quiz, setQuiz] = useState<
     | null
     | {
         question: string;
-        correctIndex: number;
-        possibleAnswers: string[];
+        correct_answer_index: number;
+        possible_answers: string[];
       }[]
   >(null);
   const [chosenAnswerIndex, setChosenAnswerIndex] = useState<number | null>(
@@ -31,6 +42,7 @@ export default function QuizDialog() {
   return (
     <Dialog
       onOpenChange={(open) => {
+        onOpenChange(open);
         if (open) {
           (async () => {
             setQuestionIndex(0);
@@ -38,62 +50,11 @@ export default function QuizDialog() {
             setChosenAnswerIndex(null);
             setShowingCorrectAnswer(false);
 
-            await new Promise((resolve, reject) => {
-              setTimeout(resolve, 2000);
+            const groqQuiz = await getGroqChatCompletion({
+              selectedFragment: selection,
+              bookContext: bookContext,
             });
-            setQuiz([
-              {
-                question: "How did Rosamond know who Cousin Penny was?",
-                correctIndex: 2,
-                possibleAnswers: [
-                  "From a photo",
-                  "By introductions",
-                  "From her father’s description",
-                  "She guessed",
-                ],
-              },
-              {
-                question: "What did Miss Penelope do after Rosamond spoke?",
-                correctIndex: 0,
-                possibleAnswers: [
-                  "Hid behind the letter",
-                  "Laughed loudly",
-                  "Scolded Rosamond",
-                  "Left the room",
-                ],
-              },
-              {
-                question: "What happened when Miss Henrietta frowned?",
-                correctIndex: 1,
-                possibleAnswers: [
-                  "Her hat fell off",
-                  "Her glasses flew off",
-                  "She dropped her sewing",
-                  "She stood up angrily",
-                ],
-              },
-              {
-                question: "How did Miss Cicely react to Rosamond’s words?",
-                correctIndex: 3,
-                possibleAnswers: [
-                  "Stayed silent",
-                  "Looked upset",
-                  "Left the room",
-                  "Laughed and joked",
-                ],
-              },
-              {
-                question:
-                  "What did Rosamond do after Miss Henny told her to sit?",
-                correctIndex: 2,
-                possibleAnswers: [
-                  "Ran away",
-                  "Cried softly",
-                  "Sat quietly in a chair",
-                  "Asked more questions",
-                ],
-              },
-            ]);
+            setQuiz(groqQuiz);
           })();
         } else {
           setQuestionIndex(0);
@@ -116,12 +77,12 @@ export default function QuizDialog() {
           {quiz && (
             <>
               <div>
-                <h2>How did Rosamond know who Cousin Penny was?</h2>
+                <h2>{quiz[questionIndex].question}</h2>
                 <div className="grid grid-cols-1 gap-2 mt-5">
-                  {quiz[questionIndex].possibleAnswers.map((answer, i) => (
+                  {quiz[questionIndex].possible_answers.map((answer, i) => (
                     <Button
                       className={`${
-                        i === quiz[questionIndex].correctIndex &&
+                        i === quiz[questionIndex].correct_answer_index &&
                         showingCorrectAnswer
                           ? "bg-green-400 hover:bg-green-400 text-black"
                           : chosenAnswerIndex === i
@@ -129,7 +90,7 @@ export default function QuizDialog() {
                           : ""
                       }
                       ${
-                        i === quiz[questionIndex].correctIndex &&
+                        i === quiz[questionIndex].correct_answer_index &&
                         showingCorrectAnswer
                           ? "bg-green-400 hover:bg-green-400"
                           : ""
@@ -145,8 +106,7 @@ export default function QuizDialog() {
                         if (chosenAnswerIndex === null) {
                           setChosenAnswerIndex(i);
 
-                          if (i !== quiz[questionIndex].correctIndex) {
-                            const prevQuestionIndex = questionIndex;
+                          if (i !== quiz[questionIndex].correct_answer_index) {
                             setTimeout(() => {
                               setShowingCorrectAnswer(true);
                             }, 1000);
@@ -196,7 +156,26 @@ export default function QuizDialog() {
               </DialogFooter>
             </>
           )}
-          {!quiz && <p>Loading Quiz...</p>}
+          {!quiz && (
+            <>
+              <div>
+                <h2>
+                  <Skeleton className="w-[350px] h-[24px]" />
+                </h2>
+                <div className="grid grid-cols-1 gap-2 mt-5">
+                  <Skeleton className="w-full h-[36px]" />
+                  <Skeleton className="w-full h-[36px]" />
+                  <Skeleton className="w-full h-[36px]" />
+                  <Skeleton className="w-full h-[36px]" />
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button disabled>Next</Button>
+                </DialogClose>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </form>
     </Dialog>
